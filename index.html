@@ -1838,7 +1838,7 @@ function showEnd(){
 
 /* ---------- Firebase Realtime Database over plain REST (no SDK) ---------- */
 /* Paste your database URL here, e.g. 'https://my-game-default-rtdb.asia-southeast1.firebasedatabase.app' */
-const FB_URL='https://console.firebase.google.com/project/elemental-block-tower-defense/database/elemental-block-tower-defense-default-rtdb/data/~2F?fb_gclid=CjwKCAjw0fbWBhBkEiwAwJuQ8UwDdlu8rjyk1N0hn0SZSjDS-D8yEVYDcORREtDJPvjtR75M0CG9ghoCF2EQAvD_BwE&fb_utm_campaign=Cloud-SS-DR-Firebase-FY26-global-gsem-1713590&fb_utm_content=text-ad&fb_utm_medium=cpc&fb_utm_source=google&fb_utm_term=KW_firebase';
+const FB_URL='https://elemental-block-tower-defense-default-rtdb.asia-southeast1.firebasedatabase.app/';
 async function fb(path,method,body,q){
   if(!FB_URL)throw new Error('no-url');
   const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),8000);
