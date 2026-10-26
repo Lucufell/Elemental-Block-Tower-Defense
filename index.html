@@ -204,6 +204,16 @@ input.nick:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .vsbar .me{color:var(--gold)}
 .vsbar .op{color:var(--life)}
 .vsbox{display:flex;flex-direction:column;gap:8px;width:100%;max-width:300px}
+.vsbar .pl{opacity:.95}
+.vsbar .pl.foe{color:#ff8d7a}.vsbar .pl.ally{color:#8fe08a}.vsbar .pl.dead{opacity:.4;text-decoration:line-through}
+.tg{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.tg .btn{flex:0 0 auto;padding:6px 10px;font-size:13px;min-height:0}
+.tg .btn.sel{outline:3px solid var(--gold)}
+.lobby{display:flex;flex-direction:column;gap:8px;width:100%;max-width:300px}
+.lobby .code{font-family:var(--f-px);font-size:34px;color:var(--gold);text-shadow:3px 3px 0 #000;letter-spacing:4px}
+.lobby .pls{display:flex;flex-direction:column;gap:4px;text-align:left}
+.lobby .pls div{display:flex;justify-content:space-between;padding:5px 8px;background:var(--panel);font-size:14px}
+.lobby .t0{color:#ff8d7a}.lobby .t1{color:#7ab8ff}
 .vscount{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--f-px);font-size:80px;color:var(--gold);text-shadow:4px 4px 0 #000;pointer-events:none;z-index:2}
 @media (prefers-reduced-motion:reduce){.toast,.notif{transition:none}.mbox{animation:none}}
 </style>
@@ -233,16 +243,27 @@ input.nick:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
         <div class="seg" role="group" aria-label="모드 선택">
           <button class="btn" id="mManual" type="button">수동<small>내가 직접 배치·강화</small></button>
           <button class="btn" id="mRandom" type="button">랜덤<small>배치·강화 전부 운</small></button>
-          <button class="btn" id="mVs" type="button" style="grid-column:1/-1">대전<small>친구와 실시간 · 디버프로 공격</small></button>
+          <button class="btn" id="mVs" type="button" style="grid-column:1/-1">대전<small>최대 8명 · 개인전/팀전</small></button>
         </div>
         <ul class="how" id="how"></ul>
         <div class="best" id="bestLine"></div>
         <div class="vsbox" id="vsBox" hidden>
-          <input class="nick" id="vsNick" type="text" maxlength="12" placeholder="내 닉네임" autocomplete="off" spellcheck="false" aria-label="닉네임">
-          <input class="nick" id="vsCode" type="text" inputmode="numeric" maxlength="4" placeholder="방 코드 4자리" autocomplete="off" aria-label="방 코드">
-          <div class="btns two"><button class="btn primary" id="bRoomNew" type="button">방 만들기</button><button class="btn" id="bRoomJoin" type="button">입장</button></div>
+          <div id="vsForm" class="vsbox" style="max-width:none">
+            <input class="nick" id="vsNick" type="text" maxlength="12" placeholder="내 닉네임" autocomplete="off" spellcheck="false" aria-label="닉네임">
+            <div class="btns two"><button class="btn sel" id="bModeFfa" type="button">개인전</button><button class="btn" id="bModeTeam" type="button">팀전</button></div>
+            <button class="btn primary" id="bRoomNew" type="button">방 만들기 (최대 8명)</button>
+            <input class="nick" id="vsCode" type="text" inputmode="numeric" maxlength="4" placeholder="방 코드 4자리" autocomplete="off" aria-label="방 코드">
+            <button class="btn" id="bRoomJoin" type="button">코드로 입장</button>
+          </div>
+          <div class="lobby" id="vsLobby" hidden>
+            <div class="code" id="lbCode"></div>
+            <div id="lbMode"></div>
+            <div class="pls" id="lbPlayers"></div>
+            <button class="btn primary" id="bVsStart" type="button" hidden>게임 시작</button>
+            <div id="lbWait"></div>
+            <button class="btn" id="bRoomCancel" type="button">나가기</button>
+          </div>
           <div class="msg" id="vsMsg" role="status"></div>
-          <button class="btn" id="bRoomCancel" type="button" hidden>취소</button>
         </div>
         <div class="btns col">
           <div class="btns two" id="rowGame">
@@ -302,7 +323,7 @@ input.nick:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
       <div class="card">
         <h1 id="vsTitle">대전 종료</h1>
         <p class="tag" id="vsSub"></p>
-        <div class="btns"><button class="btn primary" id="bVsMenu" type="button">처음 메뉴로</button></div>
+        <div class="btns"><button class="btn" id="bVsWatch" type="button" hidden>계속 지켜보기</button><button class="btn primary" id="bVsMenu" type="button">처음 메뉴로</button></div>
       </div>
     </div>
     <div class="ov boxov" id="ovBox" hidden>
@@ -311,7 +332,8 @@ input.nick:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
         <div class="mbox" id="mbox" aria-hidden="true">?</div>
         <h1 id="boxTitle">미스터리 박스</h1>
         <p class="boxdesc" id="boxText"></p>
-        <div class="btns" id="boxBtns"><button class="btn primary" id="bBoxOpen" type="button">수령</button><button class="btn danger" id="bBoxNo" type="button">거절</button></div>
+        <div class="btns" id="boxBtns"><button class="btn primary" id="bBoxOpen" type="button">수령</button><button class="btn danger" id="bBoxNo" type="button">거절</button><button class="btn" id="bBoxFoe" type="button" hidden>상대에게 사용</button></div>
+        <div class="btns" id="boxFoes" hidden></div>
         <div class="btns" id="boxOk" hidden><button class="btn primary" id="bBoxOk" type="button">확인</button></div>
       </div>
     </div>
@@ -590,7 +612,7 @@ function createGame(seed,mode){
   G.reset=function(mapSeed,m){
     if(m)G.mode=m;else if(!G.mode)G.mode='random';
     G.mapSeed=mapSeed||seed||1;G.map=buildMap(G.mapSeed);
-    G.gold=START_GOLD[G.mode];G.lives=START_LIVES;G.wave=0;G.cleared=0;G.gt=0;
+    G.gold=START_GOLD[G.mode];G.lives=START_LIVES;G.wave=0;G.cleared=0;G.boxN=0;G.gt=0;
     G.queue=[];G.enemies=[];G.towers=[];G.proj=[];G.parts=[];G.beams=[];G.fxs=[];G.events=[];
     G.grid=[];for(let r=0;r<ROWS;r++)G.grid.push(new Array(COLS).fill(null));
     G.state='play';G.kills=0;G.nid=1;G.timer=null;G.kt=0;G.kb=0;G.kd=[];
@@ -952,10 +974,10 @@ function createGame(seed,mode){
       G.beams=G.beams.filter(b=>b.l>0);
     }
 
+    if(!G.box&&Math.floor(G.wave/50)>G.boxN){G.boxN=Math.floor(G.wave/50);G.box=true;ev('box',{wave:G.wave})}
     if(G.queue.length===0&&G.enemies.length===0&&G.wave>G.cleared){
       let bonus=0;for(let w=G.cleared+1;w<=G.wave;w++)bonus+=BAL.clearBase+BAL.clearK*w;
       const pc=G.cleared;G.cleared=G.wave;G.gold+=bonus;ev('clear',{wave:G.wave,bonus});
-      if(Math.floor(G.wave/50)>Math.floor(pc/50)){G.box=true;ev('box',{wave:G.wave})}
       if(G.timer!=null)G.timer=Math.min(G.timer,BAL.clearDelay);
     }
     /* next wave comes by itself: right after a clear, or when the wave timer runs out */
@@ -963,7 +985,7 @@ function createGame(seed,mode){
     if(G.lives<=0){G.lives=0;G.state='lost'}
   };
 
-  G.serialize=()=>({v:4,box:G.box,fx:G.active.map(a=>({id:a.e.id,until:a.until})),cnt:[G.freeUp,G.sureUp,G.sureFail,G.freePlace],mode:G.mode,mapSeed:G.mapSeed,wave:G.cleared,gold:Math.floor(G.gold),lives:G.lives,kills:G.kills,
+  G.serialize=()=>({v:4,box:G.box,boxN:G.boxN,fx:G.active.map(a=>({id:a.e.id,until:a.until})),cnt:[G.freeUp,G.sureUp,G.sureFail,G.freePlace],mode:G.mode,mapSeed:G.mapSeed,wave:G.cleared,gold:Math.floor(G.gold),lives:G.lives,kills:G.kills,
     towers:G.towers.map(t=>({c:t.c,r:t.r,elem:t.elem,tier:t.tier,inv:t.inv,pity:t.pity}))});
   G.load=function(d){
     G.reset(d.mapSeed|0||1,d.mode==='manual'?'manual':'random');
@@ -977,7 +999,7 @@ function createGame(seed,mode){
     G.active=[];
     for(const f of d.fx||[]){const e=EFFECT_BY_ID[f.id];if(e&&e.dur&&(f.until|0)>G.wave)G.active.push({e,until:f.until|0})}
     G.recomputeMods();
-    const c=d.cnt||[0,0,0,0];G.freeUp=c[0]|0;G.sureUp=c[1]|0;G.sureFail=c[2]|0;G.freePlace=c[3]|0;G.box=!!d.box;
+    const c=d.cnt||[0,0,0,0];G.freeUp=c[0]|0;G.sureUp=c[1]|0;G.sureFail=c[2]|0;G.freePlace=c[3]|0;G.box=!!d.box;G.boxN=d.boxN!=null?d.boxN|0:Math.floor(G.wave/50);
     G.recalc();
   };
   return G;
@@ -1568,6 +1590,7 @@ const KEYS={random:'random-block-defense-v1',manual:'random-block-defense-manual
 const BESTKEYS={random:'random-block-defense-best',manual:'random-block-defense-best-manual'};
 const MODEKEY='random-block-defense-mode',NICKKEY='random-block-defense-nick',LOCALKEY='random-block-defense-records';
 const SPEEDS=[1,2,3,5,7,10];
+let boxAsk=false,boxTimer=null;
 let paused=true,speedIdx=0,ovStartHidden=false,ended=false,toastT=null,notifT=null,pickMode='random',soundPaused=false;
 const bestOf=m=>+lsGet(BESTKEYS[m])||0;
 function setBest(m,w){if(w>bestOf(m))lsSet(BESTKEYS[m],w)}
@@ -1725,7 +1748,7 @@ function pumpEvents(){
       if(vs){vsAp+=(e.wave%10===0?3:1);hudSig=''}else setBest(mode,e.wave);
       save();updatePreview();
     }else if(e.k==='leak')leakFlash=.5;
-    else if(e.k==='box'){if(vs)G.decline();else openBox()}
+    else if(e.k==='box')openBox()
     else if(e.k==='boss')toast('보스 등장: '+e.name+(G.wave%100===0?' + 강화 몹 (피글린 야수·호글린)':''),'bad');
     else if(e.k==='remap'){
       paintBg(G.map);remapFlash=.7;
@@ -1738,17 +1761,18 @@ function pumpEvents(){
     }
   }
   G.events.length=0;
-  if(G.state!=='play'&&!ended){ended=true;if(vs)vsFinish(false,'체력이 모두 소진되었어요');else showEnd()}
+  if(G.state!=='play'&&!ended){ended=true;if(vs)vsElim('체력이 모두 소진되었어요');else showEnd()}
 }
 
 /* ---------- start menu ---------- */
 const HOW={
   versus:[
-    '친구와 같은 지형에서 동시에 시작하고, 수동 모드 규칙으로 플레이합니다',
+    '방장이 개인전(최대 8명, 마지막 생존자 승리) 또는 팀전(빨강/파랑)을 골라 방을 만듭니다',
+    '방 코드 4자리를 친구들에게 알려주세요. 방장이 「게임 시작」을 누르면 모두 같은 지형에서 시작합니다',
     '웨이브를 클리어하면 공격 포인트(AP)가 쌓입니다. 보스 웨이브는 +3',
-    'AP로 상대에게 몬스터 러시, 가속, 약화, 타워 강등, 보스 소환을 보냅니다',
-    '체력이 먼저 0이 되는 쪽이 패배합니다. 한 명이 나가면 남은 사람이 승리합니다',
-    '방을 만들면 4자리 코드가 나옵니다. 친구에게 알려주세요'
+    'AP로 공격할 상대를 고른 뒤 몬스터 러시, 가속, 약화, 타워 강등, 보스 소환을 보냅니다',
+    '50웨이브마다 미스터리 박스: 내가 수령하거나, 상대 한 명에게 랜덤 디버프로 보낼 수 있어요',
+    '체력이 0이 되면 탈락합니다. 개인전은 마지막 1명, 팀전은 한 팀만 남으면 끝납니다'
   ],
   random:[
     '웨이브는 끝없이 이어집니다. 첫 웨이브만 시작을 누르면 이후는 자동입니다',
@@ -1782,19 +1806,24 @@ function setPickMode(m){
 let boxOpen=false;
 function openBox(){
   if(boxOpen)return;boxOpen=true;
-  $('boxKick').textContent='웨이브 '+G.cleared+' 클리어!';
+  $('boxKick').textContent='웨이브 '+G.wave+' 도달!';
   $('mbox').textContent='?';$('mbox').className='mbox';
   $('boxTitle').textContent='미스터리 박스';
   $('boxText').textContent='버프와 디버프가 100가지 넘게 들어 있어요. 열어볼까요? 거절하면 아무 일 없이 넘어갑니다.';
-  $('boxBtns').hidden=false;$('boxOk').hidden=true;$('ovBox').hidden=false;
+  $('boxBtns').hidden=false;$('boxOk').hidden=true;$('boxFoes').hidden=true;$('ovBox').hidden=false;
+  $('bBoxFoe').hidden=!(vs&&vsTargets().length);boxAsk=true;
+  clearTimeout(boxTimer);
+  if(vs)boxTimer=setTimeout(()=>{if(boxOpen&&boxAsk){G.decline();toast('시간이 지나 박스를 거절했어요');closeBox()}},20000);
 }
 function closeBox(){
+  clearTimeout(boxTimer);boxAsk=false;$('boxFoes').hidden=true;
   $('ovBox').hidden=true;boxOpen=false;
   if(sel&&sel.tw&&G.towers.indexOf(sel.tw)<0)sel=null;
   if(moveMode&&G.towers.indexOf(moveMode)<0)moveMode=null;
   hudSig='';renderInfo();updatePreview();save();
 }
 $('bBoxOpen').onclick=()=>{
+  clearTimeout(boxTimer);boxAsk=false;
   const r=G.claim();if(!r){closeBox();return}
   const good=r.e.kind==='good';
   $('mbox').textContent=good?'+':'-';$('mbox').className='mbox '+(good?'good':'bad');
@@ -1838,7 +1867,7 @@ function showEnd(){
 
 /* ---------- Firebase Realtime Database over plain REST (no SDK) ---------- */
 /* Paste your database URL here, e.g. 'https://my-game-default-rtdb.asia-southeast1.firebasedatabase.app' */
-const FB_URL='https://elemental-block-tower-defense-default-rtdb.asia-southeast1.firebasedatabase.app/';
+const FB_URL='https://elemental-block-tower-defense-default-rtdb.asia-southeast1.firebasedatabase.app';
 async function fb(path,method,body,q){
   if(!FB_URL)throw new Error('no-url');
   const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),8000);
@@ -1925,21 +1954,25 @@ async function submitRank(){
   }
 }
 
-/* ---------- versus: two players share one room in the database ---------- */
-let vs=false,room=null,vsStarted=false,vsStartAt=0,vsAp=0,vsAttackOpen=false,vsOver=false,pollBusy=false,leaveArm=0,vsOpp=null;
+/* ---------- versus: up to 8 players share one room in the database ---------- */
+const TEAMN=['빨강팀','파랑팀'];
+let vs=false,room=null,vsStarted=false,vsStartAt=0,vsAp=0,vsAttackOpen=false,vsOver=false,vsDead=false,pollBusy=false,leaveArm=0,vsMode='ffa',vsTarget=null,P={};
 const applied=new Set(),ATK_ORDER=['rush','fast','tough','weak','drop','boss'];
 function vsMsg(t,kind){const m=$('vsMsg');m.textContent=t;m.className='msg'+(kind?' '+kind:'')}
-function vsBusy(b){$('bRoomNew').disabled=b;$('bRoomJoin').disabled=b;$('bRoomCancel').hidden=!b}
+function vsBusy(b){$('bRoomNew').disabled=b;$('bRoomJoin').disabled=b}
 function stopPoll(){if(room&&room.timer){clearInterval(room.timer);room.timer=null}}
+function showLobby(on){$('vsForm').hidden=on;$('vsLobby').hidden=!on}
 function vsReset(){
-  stopPoll();room=null;vs=false;vsStarted=false;vsAttackOpen=false;vsOver=false;pollBusy=false;leaveArm=0;vsOpp=null;vsAp=0;applied.clear();
-  $('vsBar').hidden=true;$('ovVs').hidden=true;$('vsCount').hidden=true;$('app').classList.remove('vs');vsBusy(false);vsMsg('');
+  stopPoll();room=null;vs=false;vsStarted=false;vsAttackOpen=false;vsOver=false;vsDead=false;pollBusy=false;leaveArm=0;vsAp=0;vsTarget=null;P={};applied.clear();
+  $('vsBar').hidden=true;$('ovVs').hidden=true;$('vsCount').hidden=true;$('app').classList.remove('vs');vsBusy(false);vsMsg('');showLobby(false);
 }
 function vsNickVal(){
   const n=cleanNick($('vsNick').value);
   if(!n){vsMsg('닉네임을 입력해 주세요','bad');$('vsNick').focus();return null}
   lsSet(NICKKEY,n);return n;
 }
+function setVsMode(m){vsMode=m;$('bModeFfa').classList.toggle('sel',m==='ffa');$('bModeTeam').classList.toggle('sel',m==='team')}
+function teamCounts(pl){const c=[0,0];for(const u in pl)c[pl[u].team?1:0]++;return c}
 async function createRoom(){
   if(!FB_URL){vsMsg('서버(Firebase)가 아직 설정되지 않았어요','bad');return}
   const nick=vsNickVal();if(!nick)return;
@@ -1952,11 +1985,10 @@ async function createRoom(){
       if(!ex||Date.now()-(ex.created||0)>3600000)break;
       if(++tries>6)throw new Error('busy');
     }
-    const seed=1+Math.floor(Math.random()*1e9);
-    await fb('rooms/'+code,'PUT',{seed,created:Date.now(),state:'wait',host:{id:uid,nick,t:Date.now()}});
-    room={code,role:'host',opp:'guest',seed,timer:null};
-    vsMsg('방 코드 '+code+' · 친구가 입장하면 바로 시작해요','good');
-    room.timer=setInterval(vsTick,1000);vsTick();
+    const seed=1+Math.floor(Math.random()*1e9),pl={};pl[uid]={nick,team:0,n:0};
+    await fb('rooms/'+code,'PUT',{seed,created:Date.now(),state:'wait',mode:vsMode,host:uid,players:pl});
+    room={code,host:true,timer:null,pl};
+    enterLobby();
   }catch(e){vsMsg('방을 만들지 못했어요 ('+(e.status||e.message)+')','bad');vsBusy(false)}
 }
 async function joinRoom(){
@@ -1968,77 +2000,140 @@ async function joinRoom(){
   try{
     const r=await fb('rooms/'+code);
     if(!r||r.state==='over'){vsMsg('그런 방이 없어요','bad');vsBusy(false);return}
-    if(r.guest&&r.guest.id!==uid){vsMsg('이미 둘이 있는 방이에요','bad');vsBusy(false);return}
-    if(r.state==='play'&&!(r.guest&&r.guest.id===uid)){vsMsg('이미 시작한 방이에요','bad');vsBusy(false);return}
-    await fb('rooms/'+code+'/guest','PUT',{id:uid,nick,t:Date.now()});
-    room={code,role:'guest',opp:'host',seed:r.seed,timer:null};
-    vsMsg('입장했어요 · 곧 시작합니다','good');
-    room.timer=setInterval(vsTick,1000);vsTick();
+    const pl=r.players||{};
+    if(!pl[uid]){
+      if(r.state!=='wait'){vsMsg('이미 시작한 방이에요','bad');vsBusy(false);return}
+      const n=Object.keys(pl).length;
+      if(n>=8){vsMsg('방이 가득 찼어요 (최대 8명)','bad');vsBusy(false);return}
+      const c=teamCounts(pl),team=c[1]<c[0]?1:0;
+      await fb('rooms/'+code+'/players/'+uid,'PUT',{nick,team,n});
+    }
+    room={code,host:false,timer:null,pl};
+    enterLobby();
   }catch(e){vsMsg('입장하지 못했어요 ('+(e.status||e.message)+')','bad');vsBusy(false)}
+}
+function enterLobby(){
+  showLobby(true);vsMsg('');
+  room.timer=setInterval(vsTick,1000);vsTick();
+}
+function renderLobby(r){
+  const pl=room.pl,ids=Object.keys(pl).sort((a,b)=>pl[a].n-pl[b].n),team=r.mode==='team';
+  $('lbCode').textContent='방 '+room.code;
+  $('lbMode').textContent=(team?'팀전':'개인전')+' · '+ids.length+'/8명';
+  $('lbPlayers').innerHTML=ids.map(u=>'<div><span>'+esc(pl[u].nick)+(u===uid?' (나)':'')+(r.host===u?' ★':'')+'</span>'+(team?'<span class="t'+(pl[u].team?1:0)+'">'+TEAMN[pl[u].team?1:0]+'</span>':'')+'</div>').join('');
+  const c=teamCounts(pl),ok=team?(c[0]>0&&c[1]>0):ids.length>=2;
+  room.mode=r.mode;
+  $('bVsStart').hidden=!room.host;$('bVsStart').disabled=!ok;
+  $('lbWait').textContent=room.host?(ok?'준비되면 시작하세요':(team?'양 팀에 한 명씩은 있어야 해요':'2명 이상이 필요해요')):'방장이 시작하길 기다리는 중…';
+}
+async function startMatch(){
+  if(!room||!room.host)return;
+  $('bVsStart').disabled=true;
+  try{await fb('rooms/'+room.code,'PATCH',{state:'play',startAt:Date.now()});vsTick()}
+  catch(e){vsMsg('시작하지 못했어요 ('+(e.status||e.message)+')','bad');$('bVsStart').disabled=false}
+}
+function leaveLobby(){
+  if(room&&!vs){
+    if(room.host)fb('rooms/'+room.code,'DELETE').catch(()=>{});
+    else fb('rooms/'+room.code+'/players/'+uid,'DELETE').catch(()=>{});
+  }
+  vsReset();
 }
 function beginVs(r){
   if(vs)return;
-  vs=true;vsStarted=false;vsOver=false;vsAp=0;applied.clear();vsAttackOpen=false;leaveArm=0;vsOpp=null;speedIdx=0;
-  room.oppNick=cleanNick((r[room.opp]||{}).nick)||'상대';
-  vsStartAt=r.startAt;
+  vs=true;vsStarted=false;vsOver=false;vsDead=false;vsAp=0;applied.clear();vsAttackOpen=false;leaveArm=0;vsTarget=null;P={};speedIdx=0;
+  room.roster=r.players;room.mode=r.mode;
+  vsStartAt=Date.now()+3000;
+  showLobby(false);
   G.reset(r.seed,'manual');
   beginGame('manual');
   $('app').classList.add('vs');$('vsBar').hidden=false;
   hudSig='';renderVsBar();renderInfo();
 }
+const myTeam=()=>room&&room.roster&&room.roster[uid]?(room.roster[uid].team?1:0):0;
+function isFoe(u){return u!==uid&&room.roster[u]&&(room.mode!=='team'||(room.roster[u].team?1:0)!==myTeam())}
+function isAlive(u){
+  if(u===uid)return !vsDead;
+  const q=P[u];if(!q)return true;if(q.dead)return false;
+  return !(vsStarted&&q.t&&Date.now()-q.t>30000);
+}
+function vsTargets(){return room&&room.roster?Object.keys(room.roster).filter(u=>isFoe(u)&&isAlive(u)):[]}
+function curTarget(){const l=vsTargets();if(vsTarget&&l.indexOf(vsTarget)>=0)return vsTarget;return l[0]||null}
 function renderVsBar(){
-  if(!vs||!room)return;
-  const o=vsOpp;
-  $('vsBar').innerHTML='<span class="me">나 ♥'+G.lives+' · 웨이브 '+G.wave+' · AP <b>'+vsAp+'</b></span><span class="op">'+esc(room.oppNick)+' ♥'+(o?o.lives:'-')+' · 웨이브 '+(o?o.wave:'-')+' · 타워 '+(o?o.towers:'-')+'</span>';
+  if(!vs||!room||!room.roster)return;
+  let h='<span class="me">나 ♥'+G.lives+' · 웨이브 '+G.wave+' · AP <b>'+vsAp+'</b></span>';
+  for(const u in room.roster){
+    if(u===uid)continue;
+    const q=P[u],al=isAlive(u),ally=room.mode==='team'&&!isFoe(u);
+    h+='<span class="pl '+(ally?'ally':'foe')+(al?'':' dead')+'">'+esc(room.roster[u].nick)+' ♥'+(q&&q.lives!=null?q.lives:'-')+' · '+(q?q.wave:'-')+'W</span>';
+  }
+  $('vsBar').innerHTML=h;
 }
 async function vsTick(){
   if(!room||pollBusy)return;
   pollBusy=true;const rm=room;
   try{
-    if(vsStarted&&!vsOver)fb('rooms/'+rm.code+'/p/'+rm.role,'PUT',{lives:G.lives,wave:G.wave,towers:G.towers.length,t:Date.now()}).catch(()=>{});
+    if(vsStarted&&!vsOver&&!vsDead)fb('rooms/'+rm.code+'/p/'+uid,'PUT',{lives:G.lives,wave:G.wave,towers:G.towers.length,dead:false,t:Date.now()}).catch(()=>{});
     const r=await fb('rooms/'+rm.code);
     if(room!==rm)return;
-    if(!r){if(vs)vsFinish(true,'방이 닫혔어요',true);else{vsMsg('방이 사라졌어요','bad');vsReset()}return}
+    if(!r){if(vs){if(!vsOver)vsFinish(false,'방이 닫혔어요')}else{vsMsg('방이 사라졌어요','bad');vsReset()}return}
     if(!vs){
-      if(rm.role==='host'&&r.guest&&r.state==='wait'){
-        const sa=Date.now()+4000;
-        await fb('rooms/'+rm.code,'PATCH',{state:'play',startAt:sa});
-        r.state='play';r.startAt=sa;
-      }
-      if(r.state==='play'&&r.startAt&&r[rm.opp])beginVs(r);
+      rm.pl=r.players||{};
+      if(!rm.pl[uid]){vsMsg('방에서 나가졌어요','bad');vsReset();return}
+      renderLobby(r);
+      if(r.state==='play'&&r.startAt)beginVs(r);
       return;
     }
-    if(vsOver)return;
-    vsOpp=r.p&&r.p[rm.opp]||null;
-    const inbox=r.in&&r.in[rm.role];
+    P=r.p||{};
+    const inbox=r.in&&r.in[uid];
     if(inbox)for(const key in inbox){
       if(applied.has(key))continue;
       applied.add(key);
-      fb('rooms/'+rm.code+'/in/'+rm.role+'/'+key,'DELETE').catch(()=>{});
-      const a=inbox[key];
-      if(a&&ATTACKS[a.type]&&vsStarted){
-        G.attack(a.type);leakFlash=.6;Snd.fail(2);hudSig='';
-        toast('상대의 공격! '+ATTACKS[a.type].name,'bad');
-      }
+      fb('rooms/'+rm.code+'/in/'+uid+'/'+key,'DELETE').catch(()=>{});
+      const a=inbox[key];if(!a||!vsStarted||vsDead)continue;
+      const who=cleanNick(a.nick)||'상대';
+      if(a.type&&ATTACKS[a.type]){G.attack(a.type);leakFlash=.6;Snd.fail(2);hudSig='';toast(who+'의 공격! '+ATTACKS[a.type].name,'bad')}
+      else if(a.fx&&EFFECT_BY_ID[a.fx]){const e=EFFECT_BY_ID[a.fx];G.applyEffect(e);leakFlash=.6;Snd.fail(2);hudSig='';toast(who+'의 미스터리 박스: '+e.name,'bad')}
     }
-    if(r.loser===rm.opp)vsFinish(true,'상대의 체력이 모두 소진되었어요',true);
-    else if(vsStarted&&vsOpp&&Date.now()-vsOpp.t>30000)vsFinish(true,'상대의 연결이 끊겼어요',true);
-    else renderVsBar();
+    if(vsStarted&&Date.now()-vsStartAt>3000&&!vsOver){
+      const al=Object.keys(room.roster).filter(isAlive);
+      let done=false,win=false,msg='';
+      if(room.mode==='team'){
+        const ts=new Set(al.map(u=>room.roster[u].team?1:0));
+        if(ts.size<=1){done=true;win=ts.has(myTeam());msg=ts.size?'우승: '+TEAMN[[...ts][0]]:'모두 탈락했어요'}
+      }else if(al.length<=1){done=true;win=al[0]===uid;msg=al.length?'우승: '+room.roster[al[0]].nick:'모두 탈락했어요'}
+      if(done)vsFinish(win,msg);
+    }
+    renderVsBar();
+    if(vsAttackOpen)renderInfo();
   }catch(e){}
   finally{pollBusy=false}
 }
-function vsFinish(win,msg,fromOpp){
+function vsElim(msg){
+  if(vsOver||vsDead||!vs)return;
+  vsDead=true;ended=true;paused=true;hudSig='';
+  if(room)fb('rooms/'+room.code+'/p/'+uid,'PUT',{lives:0,wave:G.wave,towers:G.towers.length,dead:true,t:Date.now()}).catch(()=>{});
+  $('vsTitle').textContent='탈락…';
+  $('vsSub').textContent=msg+' · 웨이브 '+G.wave+' · 처치 '+G.kills+(room&&room.mode==='team'?' (팀이 이기면 함께 승리해요)':'');
+  $('bVsWatch').hidden=false;$('ovVs').hidden=false;
+  Snd.fail(2);
+}
+function vsFinish(win,msg){
   if(vsOver||!vs)return;
-  vsOver=true;ended=true;
-  if(room&&!fromOpp)fb('rooms/'+room.code,'PATCH',{loser:room.role}).catch(()=>{});
+  vsOver=true;ended=true;paused=true;
   stopPoll();
   $('vsTitle').textContent=win?'승리!':'패배…';
-  $('vsSub').textContent=msg+' · 웨이브 '+G.wave+' · 처치 '+G.kills;
-  $('ovVs').hidden=false;
+  $('vsSub').textContent=msg+' · 내 웨이브 '+G.wave+' · 처치 '+G.kills;
+  $('bVsWatch').hidden=true;$('ovVs').hidden=false;
   if(win)Snd.up(6);else Snd.fail(2);
 }
 function attackHTML(){
-  let h='<div><div class="cap">공격 포인트 '+vsAp+' · 웨이브를 클리어하면 쌓여요 (보스 웨이브는 +3)</div><div class="elems">';
+  const tg=vsTargets(),cur=curTarget();
+  let h='<div><div class="cap">공격 포인트 '+vsAp+' · 웨이브를 클리어하면 쌓여요 (보스 웨이브는 +3)</div>';
+  if(!tg.length)return h+'<div class="cap">공격할 상대가 없어요</div></div>';
+  h+='<div class="cap">공격 대상</div><div class="tg">';
+  for(const u of tg){const q=P[u];h+='<button class="btn'+(u===cur?' sel':'')+'" type="button" data-act="tgt" data-k="'+u+'">'+esc(room.roster[u].nick)+' ♥'+(q&&q.lives!=null?q.lives:'-')+'</button>'}
+  h+='</div><div class="elems">';
   for(const k of ATK_ORDER){
     const a=ATTACKS[k];
     h+='<button class="btn el'+(vsAp<a.cost?' poor':'')+'" type="button" data-act="atk" data-k="'+k+'"><span class="eh"><span class="nm">'+a.name+'</span><span class="cs">'+a.cost+' AP</span></span><span class="ds">'+a.desc+'</span></button>';
@@ -2046,18 +2141,50 @@ function attackHTML(){
   return h+'</div></div>';
 }
 async function sendAttack(k){
-  const a=ATTACKS[k];
-  if(!a||!room||vsOver||!vsStarted)return;
+  const a=ATTACKS[k],tg=curTarget();
+  if(!a||!room||vsOver||vsDead||!vsStarted)return;
+  if(!tg){toast('공격할 상대가 없어요','bad');return}
   if(vsAp<a.cost){toast('공격 포인트가 부족해요 ('+a.cost+' AP 필요)','bad');return}
   vsAp-=a.cost;hudSig='';renderInfo();
-  Snd.up(3);toast(a.name+' 공격을 보냈어요','good');
-  try{await fb('rooms/'+room.code+'/in/'+room.opp,'POST',{type:k,t:Date.now()})}
+  Snd.up(3);toast(room.roster[tg].nick+'에게 '+a.name+' 공격!','good');
+  try{await fb('rooms/'+room.code+'/in/'+tg,'POST',{type:k,from:uid,nick:lsGet(NICKKEY)||'',t:Date.now()})}
   catch(e){vsAp+=a.cost;hudSig='';toast('공격을 보내지 못했어요','bad')}
 }
+/* mystery box: keep it, or send a random debuff from it to one opponent */
+function boxFoeMenu(){
+  const tg=vsTargets();
+  if(!tg.length){toast('보낼 상대가 없어요','bad');return}
+  boxAsk=false;clearTimeout(boxTimer);
+  $('boxTitle').textContent='누구에게 보낼까요?';
+  $('boxText').textContent='박스에서 랜덤 디버프가 나와 선택한 상대에게 걸립니다. 거절한 것으로 처리돼요.';
+  $('boxBtns').hidden=true;
+  const f=$('boxFoes');f.textContent='';
+  for(const u of tg){const b=document.createElement('button');b.className='btn primary';b.type='button';b.textContent=room.roster[u].nick;b.onclick=()=>boxSendTo(u);f.appendChild(b)}
+  const back=document.createElement('button');back.className='btn';back.type='button';back.textContent='뒤로';
+  back.onclick=()=>{f.hidden=true;$('boxBtns').hidden=false;$('boxTitle').textContent='미스터리 박스';$('boxText').textContent='버프와 디버프가 100가지 넘게 들어 있어요. 열어볼까요?';boxAsk=true};
+  f.appendChild(back);f.hidden=false;
+}
+async function boxSendTo(u){
+  const bad=EFFECTS.filter(e=>e.kind==='bad'),e=bad[Math.floor(Math.random()*bad.length)];
+  G.decline();
+  $('boxFoes').hidden=true;
+  $('mbox').textContent='!';$('mbox').className='mbox bad';
+  $('boxKick').textContent='발송!';
+  $('boxTitle').textContent=room.roster[u].nick+'에게: '+e.name;
+  $('boxText').textContent=e.desc;
+  $('boxOk').hidden=false;Snd.up(3);
+  try{await fb('rooms/'+room.code+'/in/'+u,'POST',{fx:e.id,from:uid,nick:lsGet(NICKKEY)||'',t:Date.now()})}
+  catch(err){toast('보내지 못했어요','bad')}
+}
 $('mVs').onclick=()=>setPickMode('versus');
+$('bModeFfa').onclick=()=>setVsMode('ffa');
+$('bModeTeam').onclick=()=>setVsMode('team');
 $('bRoomNew').onclick=createRoom;
 $('bRoomJoin').onclick=joinRoom;
-$('bRoomCancel').onclick=()=>{if(room&&room.role==='host'&&!vs)fb('rooms/'+room.code,'DELETE').catch(()=>{});vsReset()};
+$('bVsStart').onclick=startMatch;
+$('bBoxFoe').onclick=boxFoeMenu;
+$('bRoomCancel').onclick=leaveLobby;
+$('bVsWatch').onclick=()=>{$('ovVs').hidden=true};
 $('bVsMenu').onclick=()=>showStart();
 
 /* ---------- controls ---------- */
@@ -2162,7 +2289,7 @@ $('bUp').onclick=()=>{
   }
 };
 $('bSpeed').onclick=()=>{if(vs){vsAttackOpen=!vsAttackOpen;renderInfo();hudSig='';return}speedIdx=(speedIdx+1)%SPEEDS.length;hudSig=''};
-$('bPause').onclick=()=>{if(vs){if(!live())return;if(leaveArm&&Date.now()-leaveArm<2500){leaveArm=0;vsFinish(false,'대전을 포기했어요')}else{leaveArm=Date.now();setTimeout(()=>{hudSig=''},2600)}hudSig='';return}if(!live())return;paused=!paused;hudSig=''};
+$('bPause').onclick=()=>{if(vs){if(!live())return;if(leaveArm&&Date.now()-leaveArm<2500){leaveArm=0;vsElim('대전을 포기했어요')}else{leaveArm=Date.now();setTimeout(()=>{hudSig=''},2600)}hudSig='';return}if(!live())return;paused=!paused;hudSig=''};
 
 function placeManual(c,r,elem,selectNew){
   const res=G.build(c,r,elem);
@@ -2176,6 +2303,7 @@ function placeManual(c,r,elem,selectNew){
 $('info').addEventListener('click',ev=>{
   const b=ev.target.closest&&ev.target.closest('[data-act]');if(!b||!live())return;
   const act=b.dataset.act;
+  if(act==='tgt'){vsTarget=b.dataset.k;renderInfo();return}
   if(act==='atk'){if(vs)sendAttack(b.dataset.k);return}
   if(act==='pick'&&mode==='manual'){
     const k=b.dataset.k;if(!ELEM[k])return;
