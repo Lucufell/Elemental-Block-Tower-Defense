@@ -79,7 +79,9 @@ button{font:inherit;color:inherit}
 .btn:disabled{opacity:.42;cursor:default}
 .btn:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
 
-.ctl{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.ctl{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px}
+.ctl .ug{background:#7a4fb0;box-shadow:inset -3px -3px 0 #47276f,inset 3px 3px 0 #b48be6,0 0 0 2px var(--panel-lo)}
+.ctl .ug.poor small{color:var(--bad)}
 .ctl .btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:54px;padding:4px 2px;line-height:1.1}
 .ctl .btn small{font-family:var(--f-px);font-size:8px;color:var(--gold);min-height:8px}
 .ctl .btn.poor small{color:var(--bad)}
@@ -345,6 +347,7 @@ input.nick:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
     <button class="btn primary" id="bWave" type="button"><span>시작</span><small class="t" id="cWave"></small></button>
     <button class="btn place" id="bPlace" type="button"><span>배치</span><small id="cPlace"></small></button>
     <button class="btn up" id="bUp" type="button"><span>강화</span><small id="cUp"></small></button>
+    <button class="btn ug" id="bUg" type="button"><span>업글</span><small id="cUg"></small></button>
     <button class="btn" id="bSpeed" type="button">1배속</button>
     <button class="btn" id="bPause" type="button">정지</button>
   </div>
@@ -509,18 +512,20 @@ const ZERO_BUFF={dmg:0,rate:0,range:0,pierce:0,gold:0};
 /* timed effects from mystery boxes are summed into one "mod" object */
 function newMod(){const z=()=>({fire:0,water:0,wind:0,earth:0,light:0,dark:0});return{dmg:z(),rate:z(),range:z(),killGold:1,upCost:1,buildCost:1,sell:BAL.sellRate,eSpd:1,eHp:1,luck:0}}
 const ZERO_MOD=newMod();
+const ZERO_UG={dmg:0,rate:0,sp:0,n:0};
+const UG_STAT={dmg:{name:'공격력',per:.08},rate:{name:'공격속도',per:.05},sp:{name:'특수능력',per:.06}};
 function tstat(tw,mod){
   mod=mod||ZERO_MOD;
   const t=tw.tier,E=ELEM[tw.elem],b=tw.buff||ZERO_BUFF;
-  const tc=Math.min(t,14),mf=v=>Math.max(.1,1+v);
-  const s={dmg:E.dmg*dmgMul(t)*(1+b.dmg)*mf(mod.dmg[tw.elem]),rate:E.rate*rateMul(t)*(1+b.rate)*mf(mod.rate[tw.elem]),range:E.range*T*(1+.03*tc)*(1+b.range)*mf(mod.range[tw.elem]),pierce:b.pierce};
+  const tc=Math.min(t,14),mf=v=>Math.max(.1,1+v),u=tw.ug||ZERO_UG,sk=1+UG_STAT.sp.per*u.sp;
+  const s={dmg:E.dmg*dmgMul(t)*(1+UG_STAT.dmg.per*u.dmg)*(1+b.dmg)*mf(mod.dmg[tw.elem]),rate:E.rate*rateMul(t)*(1+UG_STAT.rate.per*u.rate)*(1+b.rate)*mf(mod.rate[tw.elem]),range:E.range*T*(1+.03*tc)*(1+b.range)*mf(mod.range[tw.elem]),pierce:b.pierce};
   switch(tw.elem){
-    case'fire':s.splash=T*.85*(1+.07*tc);s.burn=Math.min(1,.3+.04*t);break;
-    case'water':s.slow=Math.min(.6,.28+.055*t);s.slowT=1.6;break;
-    case'wind':s.crit=Math.min(.6,.1+.035*t);break;
-    case'earth':s.stun=Math.min(.6,.14+.03*t);s.stunT=.7;break;
-    case'light':s.chain=Math.min(8,1+Math.floor(t/2));break;
-    case'dark':s.curse=Math.min(.6,.18+.06*t);s.curseT=2.5;s.exec=Math.min(.3,.05+.01*t);break;
+    case'fire':s.splash=T*.85*(1+.07*tc)*sk;s.burn=Math.min(1,(.3+.04*t)*sk);break;
+    case'water':s.slow=Math.min(.75,Math.min(.6,.28+.055*t)*sk);s.slowT=1.6;break;
+    case'wind':s.crit=Math.min(.75,Math.min(.6,.1+.035*t)*sk);break;
+    case'earth':s.stun=Math.min(.75,Math.min(.6,.14+.03*t)*sk);s.stunT=.7;break;
+    case'light':s.chain=Math.min(8,1+Math.floor(t/2))+Math.min(4,Math.floor(u.sp/4));break;
+    case'dark':s.curse=Math.min(.75,Math.min(.6,.18+.06*t)*sk);s.curseT=2.5;s.exec=Math.min(.35,Math.min(.3,.05+.01*t)*sk);break;
   }
   return s;
 }
@@ -630,7 +635,7 @@ function createGame(seed,mode){
   G.burst=burst;
 
   function mkTower(c,r,elem,inv){
-    const tw={id:G.nid++,c,r,x:(c+.5)*T,y:(r+.5)*T,elem,tier:0,cd:.2,flash:0,inv:inv||0,pity:0,buff:null};
+    const tw={id:G.nid++,c,r,x:(c+.5)*T,y:(r+.5)*T,elem,tier:0,cd:.2,flash:0,inv:inv||0,pity:0,buff:null,ug:{dmg:0,rate:0,sp:0,n:0}};
     G.towers.push(tw);G.grid[r][c]=tw;return tw;
   }
   /* manual mode only: neighbouring towers (8 tiles around) hand each other a small bonus */
@@ -710,6 +715,34 @@ function createGame(seed,mode){
     tw.pity=Math.min(.3,tw.pity+.05);
     burst(tw.x,tw.y,'#6b6b6b',8,60,.4);
     return{res:'fail',tw,from,to:from,chance:ch,pity:tw.pity};
+  };
+  /* ---- 업글: random stat boost (attack / speed / special), survives tier changes ---- */
+  G.ugCostR=()=>Math.round((35+3*Math.max(1,G.wave))*G.mod.upCost);
+  G.ugChanceR=tw=>Math.max(.3,Math.min(1,.8-.012*tw.ug.n+G.mod.luck));
+  G.ugCostM=tw=>Math.round((100+6*Math.max(1,G.wave))*ELEM[tw.elem].cm*Math.pow(1.17,tw.ug.n)*(1+.12*tw.tier)*G.mod.upCost);
+  function ugApply(tw){
+    const k=['dmg','rate','sp'][Math.floor(rng()*3)];
+    tw.ug[k]++;tw.ug.n++;tw.flash=.6;
+    burst(tw.x,tw.y,ELEM[tw.elem].col,14,90,.5);
+    return k;
+  }
+  G.ugRandom=function(){
+    if(!G.towers.length)return{res:'none'};
+    const cost=G.ugCostR();
+    if(G.gold<cost)return{res:'gold',cost};
+    G.gold-=cost;
+    const tw=G.towers[Math.floor(rng()*G.towers.length)],ch=G.ugChanceR(tw);
+    tw.inv+=cost;
+    if(rng()<ch){const k=ugApply(tw);return{res:'ok',tw,stat:k,chance:ch}}
+    burst(tw.x,tw.y,'#6b6b6b',8,60,.4);
+    return{res:'fail',tw,chance:ch};
+  };
+  G.ugManual=function(tw){
+    const cost=G.ugCostM(tw);
+    if(G.gold<cost)return{res:'gold',cost};
+    G.gold-=cost;tw.inv+=cost;
+    const k=ugApply(tw);
+    return{res:'ok',tw,stat:k,cost};
   };
   G.sellValue=tw=>Math.floor(tw.inv*G.mod.sell);
   G.sell=function(tw){
@@ -988,7 +1021,7 @@ function createGame(seed,mode){
   };
 
   G.serialize=()=>({v:4,box:G.box,boxN:G.boxN,fx:G.active.map(a=>({id:a.e.id,until:a.until})),cnt:[G.freeUp,G.sureUp,G.sureFail,G.freePlace],mode:G.mode,mapSeed:G.mapSeed,wave:G.cleared,gold:Math.floor(G.gold),lives:G.lives,kills:G.kills,
-    towers:G.towers.map(t=>({c:t.c,r:t.r,elem:t.elem,tier:t.tier,inv:t.inv,pity:t.pity}))});
+    towers:G.towers.map(t=>({c:t.c,r:t.r,elem:t.elem,tier:t.tier,inv:t.inv,pity:t.pity,ug:[t.ug.dmg,t.ug.rate,t.ug.sp]}))});
   G.load=function(d){
     G.reset(d.mapSeed|0||1,d.mode==='manual'?'manual':'random');
     G.wave=G.cleared=Math.max(0,d.wave|0);
@@ -997,6 +1030,7 @@ function createGame(seed,mode){
       if(!ELEM[t.elem]||!G.canBuild(t.c,t.r))continue;
       const tw=mkTower(t.c,t.r,t.elem,+t.inv||(G.mode==='manual'?ELEM[t.elem].cost:BAL.placeBase));
       tw.tier=Math.max(0,t.tier|0);tw.pity=Math.max(0,Math.min(.3,+t.pity||0));
+      if(Array.isArray(t.ug)){const q=i=>Math.max(0,Math.min(999,t.ug[i]|0));tw.ug={dmg:q(0),rate:q(1),sp:q(2),n:0};tw.ug.n=tw.ug.dmg+tw.ug.rate+tw.ug.sp}
     }
     G.active=[];
     for(const f of d.fx||[]){const e=EFFECT_BY_ID[f.id];if(e&&e.dur&&(f.until|0)>G.wave)G.active.push({e,until:f.until|0})}
@@ -1613,6 +1647,10 @@ function notify(kind,title,sub,tw){
 const posText=tw=>'('+(tw.c+1)+'열 '+(tw.r+1)+'행)';
 const fmt=n=>n>=1e9?(n/1e9).toFixed(1)+'B':n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e4?(n/1e3).toFixed(1)+'K':n>=100?String(Math.round(n)):n.toFixed(1).replace(/\.0$/,'');
 const pct=v=>{const p=v*100;return(p>=10?Math.round(p):Math.round(p*10)/10)+'%'};
+function ugRow(tw){
+  const u=tw.ug;
+  return '<div class="wide"><span>업글</span><em>'+(u.n?u.n+'회 · 공격력 +'+Math.round(u.dmg*UG_STAT.dmg.per*100)+'% · 공속 +'+Math.round(u.rate*UG_STAT.rate.per*100)+'% · 특수 +'+Math.round(u.sp*UG_STAT.sp.per*100)+'%':'없음')+'</em></div>';
+}
 function specialText(tw,st){
   switch(tw.elem){
     case'fire':return'폭발 '+(st.splash/T).toFixed(1)+'칸 · 화상 '+Math.round(st.burn*100)+'%/초';
@@ -1640,7 +1678,7 @@ function sheetHTML(tw){
   let h='<div><div class="th" style="--ec:'+E.col+'"><i class="gem"></i><span class="tt">'+E.name+' 타워</span><span class="role">'+E.role+'</span><span class="badge'+(tw.tier>=6?' rb':'')+'" style="--gc:'+tc+'">'+tn+'</span></div>'+
     '<div class="pips">'+pips+'</div>'+
     '<div class="stats"><div><span>공격력</span><em>'+fmt(st.dmg)+'</em></div><div><span>공격속도</span><em>'+st.rate.toFixed(2)+'/초</em></div>'+
-    '<div><span>사거리</span><em>'+(st.range/T).toFixed(1)+'칸</em></div>';
+    '<div><span>사거리</span><em>'+(st.range/T).toFixed(1)+'칸</em></div>'+ugRow(tw);
   if(man){
     h+='<div><span>승급 확률</span><em>'+pct(G.upChanceM(tw))+(tw.pity>0?' (+'+Math.round(tw.pity*100)+'%)':'')+'</em></div>'+
       '<div class="wide"><span>특수</span><em>'+specialText(tw,st)+'</em></div>'+
@@ -1721,17 +1759,17 @@ function renderFx(){
 }
 function hud(){
   const man=mode==='manual';
-  let pc='',uc='',pPoor=false,uPoor=false;
-  if(!man){pc=G.placeCost();uc=G.upCost();pPoor=G.gold<pc;uPoor=G.gold<uc}
+  let pc='',uc='',pPoor=false,uPoor=false,gc='',gPoor=false;
+  if(!man){pc=G.placeCost();uc=G.upCost();pPoor=G.gold<pc;uPoor=G.gold<uc;gc=G.ugCostR();gPoor=G.gold<gc}
   else{
     if(buildElem){pc=G.buildCostOf(buildElem);pPoor=G.gold<pc}
-    if(sel&&sel.tw){uc=G.upCostM(sel.tw);uPoor=G.gold<uc}
+    if(sel&&sel.tw){uc=G.upCostM(sel.tw);uPoor=G.gold<uc;gc=G.ugCostM(sel.tw);gPoor=G.gold<gc}
   }
   const tm=G.timer!=null?Math.ceil(G.timer):-1;
-  const sig=G.lives+'|'+Math.floor(G.gold)+'|'+G.wave+'|'+speedIdx+'|'+paused+'|'+pc+'|'+uc+'|'+ovStartHidden+'|'+tm+'|'+buildMode+'|'+man+'|'+G.active.length+'|'+G.cleared+'|'+G.freeUp+'.'+G.sureUp+'.'+G.sureFail+'.'+G.freePlace+'|'+vs+'|'+vsAp+'|'+vsAttackOpen+'|'+(leaveArm?1:0);
+  const sig=G.lives+'|'+Math.floor(G.gold)+'|'+G.wave+'|'+speedIdx+'|'+paused+'|'+pc+'|'+uc+'|'+gc+'|'+ovStartHidden+'|'+tm+'|'+buildMode+'|'+man+'|'+G.active.length+'|'+G.cleared+'|'+G.freeUp+'.'+G.sureUp+'.'+G.sureFail+'.'+G.freePlace+'|'+vs+'|'+vsAp+'|'+vsAttackOpen+'|'+(leaveArm?1:0);
   if(sig===hudSig)return;hudSig=sig;renderFx();
   $('hLives').textContent=G.lives;$('hGold').textContent=Math.floor(G.gold);$('hWave').textContent=G.wave;
-  $('cPlace').textContent=pc;$('cUp').textContent=uc;
+  $('cPlace').textContent=pc;$('cUp').textContent=uc;$('cUg').textContent=gc;$('bUg').classList.toggle('poor',gPoor);
   $('bPlace').classList.toggle('poor',pPoor);$('bUp').classList.toggle('poor',uPoor);
   $('bPlace').classList.toggle('live',man&&buildMode);
   $('cWave').textContent=tm>=0?'다음 '+tm+'초':'';
@@ -1780,6 +1818,7 @@ const HOW={
     '웨이브는 끝없이 이어집니다. 첫 웨이브만 시작을 누르면 이후는 자동입니다',
     '배치: 무작위 원소 타워가 무작위 땅에 설치됩니다',
     '강화: 무작위 타워 1개가 승급에 도전하고, 실패하면 하락합니다',
+    '업글: 무작위 타워 1개의 공격력·공격속도·특수능력 중 하나가 무작위로 오릅니다. 실패할 수도 있어요. 업글은 승급·하락해도 유지됩니다',
     '초월 위로는 극1, 극2… 끝없이 올라갑니다',
     '타워를 눌러 판매하면 투자한 골드의 절반을 돌려받습니다',
     '50웨이브마다 지형(평원·바다·빙하·네더·엔드)과 몬스터가 바뀌고 타워가 뒤섞입니다. 100웨이브마다 강화 몹이 등장합니다',
@@ -1789,6 +1828,7 @@ const HOW={
     '웨이브와 등급은 끝없이 이어집니다. 첫 웨이브만 시작을 누르면 이후는 자동입니다',
     '배치: 원소를 고르고 빈 땅을 눌러 직접 설치합니다. 원소마다 역할이 달라요',
     '타워를 눌러 강화하거나 이동하고, 판매하면 투자한 골드의 절반을 돌려받습니다',
+    '업글: 타워를 고르고 업글을 누르면 비싼 비용으로 공격력·공격속도·특수능력 중 하나가 무작위로 오릅니다. 승급해도 업글은 유지돼요',
     '맞닿은 타워끼리 효과를 주고받으니 배치를 계속 고민해 보세요',
     '50웨이브마다 지형(평원·바다·빙하·네더·엔드)과 몬스터가 바뀌고, 땅이 모자라면 남는 타워는 환불됩니다. 100웨이브마다 강화 몹이 등장합니다',
     '50웨이브마다 미스터리 박스가 나옵니다. 수령하면 버프·디버프 100여 가지 중 하나를 받고, 거절하면 그냥 넘어갈 수 있어요'
@@ -2296,6 +2336,24 @@ $('bUp').onclick=()=>{
     if(!sel||!sel.tw){toast('강화할 타워를 먼저 선택하세요','bad');return}
     manualUpgrade(sel.tw);
   }
+};
+const UGTXT=k=>UG_STAT[k].name+' +'+Math.round(UG_STAT[k].per*100)+'%';
+$('bUg').onclick=()=>{
+  if(!live())return;
+  let r,tw;
+  if(mode==='random'){
+    r=G.ugRandom();
+    if(r.res==='none'){toast('업글할 타워가 없어요','bad');return}
+  }else{
+    if(!sel||!sel.tw){toast('업글할 타워를 먼저 선택하세요','bad');return}
+    r=G.ugManual(sel.tw);
+  }
+  if(r.res==='gold'){toast('골드가 부족합니다 ('+r.cost+' 필요)','bad');return}
+  tw=r.tw;const nm=ELEM[tw.elem].name+' 타워 '+posText(tw);
+  sel={tw};
+  if(r.res==='ok'){Snd.up(2);notify('good','업글 성공!',nm+' · '+UGTXT(r.stat)+' (누적 '+tw.ug.n+'회)',tw)}
+  else{Snd.fail(1);notify('bad','업글 실패',nm+' · 이번엔 실패했어요 (성공 확률 '+Math.round(r.chance*100)+'%)',tw)}
+  renderInfo();save();hudSig='';
 };
 $('bSpeed').onclick=()=>{if(vs){vsAttackOpen=!vsAttackOpen;renderInfo();hudSig='';return}speedIdx=(speedIdx+1)%SPEEDS.length;hudSig=''};
 $('bPause').onclick=()=>{if(vs){if(!live())return;if(leaveArm&&Date.now()-leaveArm<2500){leaveArm=0;vsElim('대전을 포기했어요')}else{leaveArm=Date.now();setTimeout(()=>{hudSig=''},2600)}hudSig='';return}if(!live())return;paused=!paused;hudSig=''};
